@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<style type="text/css">
+			*{
+				margin: 0;
+				padding: 0;
+			}
+			h1{
+				font-size: 1em;
+			}
+			p{
+				font-size: 0.8em;
+			}
+			.sign-box{
+				position: relative;
+				width: 500px;
+				height: 400px;
+				border: 5px solid #0096FF;
+				border-radius: 2px;
+				
+				font: 16px "微软雅黑";
+				
+				overflow: hidden;
+			}
+			.top-box{
+				width: 100%;
+				height: 200px;
+				background-color: #DBDBDB;
+				padding: 40px 0px 10px 40px;
+			}
+			.left-content{
+				width: 200px;
+				height: 200px;
+				
+				text-align: center;
+			}
+			.left-content a{
+				display: block;
+				width: 100px;
+				height: 50px;
+				background-color: #0096FF;
+				
+				margin: 10px auto;
+				text-decoration: none;
+				line-height: 50px;
+				border-radius: 2px;
+				color: white;
+			}
+			.calendar-box{
+				width: 200px;
+				height: 200px;
+				margin-left: 20px;
+			}
+			.grid{
+				display: inline-block;
+				float: left;
+				
+				border: 1px solid #AA0000;
+			}
+			.calendar {
+				width: 200px;
+				position: relative;
+			}
+			.calendar table {
+				width: 100%;
+				text-align: center;
+			}
+			.calendar a{
+				display: block;
+				width: calc(100%-6px);
+				padding: 3px;
+			}
+			.calendar a:hover{
+				padding: 0px;
+				border: 3px solid #fb0 ;
+				border-radius: 9px;
+				background-color: yellow;
+			}
+			.prev {
+				float: left;
+			}
+			.caption {
+				text-align: right;
+			}
+			.calendar-relative{
+				position: relative;
+				width: 100%;
+				zoom: 1;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="sign-box">
+			<div class="top-box">
+				<div class="left-content grid">
+				<h1>user,您已经连续活跃n天</h1>
+				<p>您已连续n天未签到了</p>
+				<a href="">点击签到</a>
+				</div>
+				<div class="calendar-box grid">
+				<div id="calendar" class="calendar">
+			<div class="prev">
+				<< </div>
+					<div id="caption" class="caption">
+						<select id="years" name="">
+						</select>
+						<select id="months" name="">
+						</select>
+					</div>
+					<table id="calendar-tb" border="0" cellspacing="" cellpadding="">
+						<tr>
+							<th>日</th>
+							<th>一</th>
+							<th>二</th>
+							<th>三</th>
+							<th>四</th>
+							<th>五</th>
+							<th>六</th>
+						</tr>
+					</table>
+			</div>
+				</div>
+			</div>
+			<div class="total">
+				
+			</div>
+		</div>
+	</body>
+	<script type="text/javascript">
+		function formatDate(formatStr, fdate) {
+			var fTime, fStr = 'ymdhis';
+			if (!formatStr)
+				formatStr = "y-m-d h:i:s";
+			if (fdate)
+				fTime = new Date(fdate);
+			else
+				fTime = new Date();
+			var formatArr = [
+				fTime.getFullYear().toString(), (fTime.getMonth() + 1).toString(),
+				fTime.getDate().toString(),
+				fTime.getHours() < 10 ? '0' + fTime.getHours().toString() : fTime.getHours().toString(),
+				fTime.getMinutes() < 10 ? '0' + fTime.getMinutes().toString() : fTime.getMinutes().toString(),
+				fTime.getSeconds() < 10 ? '0' + fTime.getSeconds().toString() : fTime.getSeconds().toString()
+			]
+			for (var i = 0; i < formatArr.length; i++) {
+				formatStr = formatStr.replace(fStr.charAt(i), formatArr[i]);
+			}
+			return formatStr;
+		}
+		var curY, curM, days;
+		var nstr = new Date(); //当前
+		var ynow = nstr.getFullYear(); //年份
+		var mnow = nstr.getMonth() + 1; //月份
+		var caption = document.getElementById("caption");
+		var calendar = document.getElementById("calendar");
+		var tb = document.getElementById("calendar-tb");
+		var yearSelect = document.getElementById("years");
+		var monSelect = document.getElementById("months");
+		curY = ynow;
+		curM = mnow;
+		days = getDays(curY, curM);
+		
+		createCaleTb()
+		
+		function createCaleTb(){
+			for (var i = 0; i < 5; i++){
+				var tr = document.createElement('tr');
+				tb.appendChild(tr)
+				for (var j = 0; j < 7; j++){
+					var td = document.createElement('td'),
+					div = document.createElement('div'),
+					a = document.createElement('a'),
+					span = document.createElement('span');
+					div.className = 'calendar-relative';
+					tr.appendChild(td);
+					td.appendChild(div);
+					div.appendChild(a);
+					a.appendChild(span);
+				}
+			}
+			updateTable();
+		}
+
+		function updateTable() {
+			var n1str = new Date(curY, curM-1, 1).getDay();
+			
+			for (var i = 0; i < 35; i++) {
+				var td = calendar.getElementsByTagName("td")[i];
+				if (i >= n1str && i < days + n1str)
+					td.getElementsByTagName('span')[0].textContent = i - n1str+1;
+				else
+					td.getElementsByTagName('span')[0].textContent = "";
+			}
+		}
+		for (var i = ynow; i > 2000; i--) {
+			var option = document.createElement("option");
+			option.textContent = i;
+			yearSelect.add(option)
+		}
+		for (var i = 1; i <= 12; i++) {
+			var option = document.createElement("option");
+			option.textContent = i;
+			monSelect.add(option)
+		}
+		monSelect.value = mnow;
+
+		function getDays(y, m) {
+			return new Date(y, m, 0).getDate();
+		}
+		yearSelect.addEventListener('change', dateChange);
+		monSelect.addEventListener('change', dateChange);
+
+		function dateChange() {
+			curY = yearSelect.value;
+			curM = monSelect.value;
+			days = getDays(curY, curM);
+			updateTable();
+		}
+		
+		tb.addEventListener('click',tb_click);
+		function tb_click(e){
+			e.target.style.background = '#ff0000';
+		}
+	</script>
+</html>

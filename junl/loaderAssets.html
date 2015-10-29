@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+	</head>
+
+	<body>
+	</body>
+	<script src="js/jquery-2.1.1.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/ImageManager.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+	var imageM = new AssetManager();
+	console.log(imageM);
+	/**
+		 * 图片资源
+		 */
+		var imageResources = [{
+			id: 'eraser',
+			src: 'img/home_pic_01.jpg'
+		},{
+			id: 'image1',
+			src: 'img/home_pic_02.jpg'
+		},{
+			id: 'image2',
+			src: 'img/home_pic_03.jpg'
+		}];
+		imageM.load(imageResources);
+		imageM.addEventListener('complete',handler)
+		function handler(d){
+			alert(d.images)
+		}
+		
+		$.ajax({
+			type:"post",
+			url:"http://localhost:5000/login",
+			data:{
+				username:"junl",
+				password:"123"
+			},
+			success:function(){
+				alert()
+			}
+		});
+	</script>
+
+</html>

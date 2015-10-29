@@ -1,0 +1,19 @@
+
+.container{
+	height:  500px;
+}
+.page1{
+	background-color: #FF0000;
+	/*width: 100%;*/
+	height: 500px;
+}
+.page2{
+	background-color: #dd0000;
+	/*width: 100%;*/
+	height: 500px;
+}
+.page3{
+	background-color: #aa0000;
+	/*width: 100%;*/
+	height: 500px;
+}

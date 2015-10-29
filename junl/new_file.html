@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<style type="text/css">
+		body{
+			margin: 0;
+			padding: 0;
+		}
+		img{
+			width: 100%;
+		}
+		input{
+			position: absolute;
+			top: 0;
+			z-index: 1;
+		}
+			.photo{
+				position: relative;
+				width: 418px;
+				height: 418px;
+				margin-top: 40px;
+			}
+			#console{
+				margin-top: 200px;
+			}
+		</style>
+	</head>
+	<body>
+		<input type="range" name="" id="slide" value="100" />
+		<div id="photo" class="photo">
+						</div>
+						<div id="console">
+							打印
+						</div>
+	</body>
+	<script type="text/javascript" src="js/hammer.min.js"></script>
+	<script src="js/jquery-2.1.1.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/jquery.transit.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/ImageEditor.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/idleb/utils/NumberFormat.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		var num = 129564685452;
+		var num0 = 1;
+		console.log(NumberFormat.US(num));
+		console.log(NumberFormat.CN(num));
+		console.log(NumberFormat.Zero(num0,5));
+	</script>
+</html>

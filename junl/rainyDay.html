@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<style type="text/css">
+			canvas {
+				width: 100%
+			}
+		</style>
+	</head>
+
+	<body>
+	</body>
+	<script type="text/javascript">
+		var c = document.createElement('canvas'),
+			ctx = c.getContext('2d'),
+			w = c.width = 600,
+			h = c.height = 400,
+			lineWidth = 1,
+			lineCap = 'round',
+			GRAVITY = 20,
+			DRAG = 0.7,
+			_snow=[],
+			pixels;
+
+		function init() {
+			ctx.lineWidth = lineWidth;
+			ctx.lineCap = lineCap;
+			ctx.font = '64px Verdana';
+			ctx.fillStyle = '#000';
+			ctx.fillRect(0, 0, w, h);
+			ctx.fillStyle = '#fff';
+			ctx.fillText('happy birthday', 100, 200);
+			pixels = ctx.getImageData(0, 0, w, h);
+			ctx.clearRect(0, 0, w, h);
+			ctx.putImageData(pixels, 0, 0, 0, 0, w, h);
+			document.body.appendChild(c);
+			
+			loop();
+		}
+		
+		function loop(){
+			requestAnimationFrame(loop);
+			update();
+		}
+
+		function emitParticle(ex, ey, s, c, vx, vy) {
+			var p = new SnowParticle();
+			p.x = ex;
+			p.y = ey;
+			p.vx = vx || 0;
+			p.vy = vy || 0;
+			p.s = s || 1;
+			p.c = c || 0x00bfff;
+			_snow.push(p);
+			return p;
+		}
+
+		function update() {
+			
+			ctx.save();
+			ctx.clearRect(0,0,w,h);
+			ctx.fillStyle = '#000';
+			ctx.fillRect(0, 0, w, h);
+			ctx.globalCompositeOperation = 'lighter';
+//          this._canvas.applyFilter(this._canvas, this._canvas.rect, ZERO_POINT, this._color);
+//          this._canvas.applyFilter(this._canvas, this._canvas.rect, ZERO_POINT, this._blur);
+//            this._canvas.fillRect(this._canvas.rect, 0x0); // カンバスをクリア
+//            var n:int = this._snow.length;
+            var d;
+            var gravity = GRAVITY / 100; // あらかじめ計算しとく
+//            while (n--) {
+            for (var i = 0; i<_snow.length;i++) {
+                var p = _snow[i];
+//                var p:SnowParticle = this._snow[n];
+//                p.vx += 0.02;
+                p.vy += gravity * p.s; // まず重力を加える
+                p.vx *= 0.99; // 空気抵抗
+                p.vy *= 0.99; // y 方向にも
+                var po = Math.floor(p.x)+w*Math.floor(p.y)
+                d = 1 - ((pixels.data[po*4]<<16+pixels.data[po*4+1]<<8+pixels.data[po*4+2]) / 0xffffff) * DRAG; // forceMap にもとづいて抵抗値を計算。黒→速い、白→遅い。
+                p.vx *= d; // forceMap から得た抵抗値を適用
+                var vy = p.vy;
+                p.vy *= d; // y 方向にも
+                if ((vy - p.vy) > 1 && Math.random() < 0.3) {
+                    //p.vy = -2;
+                    //p.vx = (Math.random() - 0.5) * 3;
+                    this.emitParticle(p.x, p.y - 2, 1, p.c, (Math.random() - 0.5) * 6, -(Math.random() * 2 + 1));
+                    this.emitParticle(p.x, p.y - 2, 1, p.c, (Math.random() - 0.5) * 6, -(Math.random() * 2 + 1));
+                    this.emitParticle(p.x, p.y - 2, 1, p.c, (Math.random() - 0.5) * 6, -(Math.random() * 2 + 1));
+                }
+//              console.log(d)
+                var px = p.x;
+                var py = p.y;
+                p.x += p.vx; // 動かす
+                p.y += p.vy;
+//                this._canvas.setPixel(p.x, p.y, p.c); // 雪 1 粒描く
+                _drawLine(p.x, p.y, px, py, p.c, 1);
+                if (p.y > h) { // もし画面外にでちゃったら
+//                    this._snow.splice(n, 1); // とりのぞく
+					p = null;
+                    _snow.splice(i,1);
+                }
+            }
+            ctx.restore(); // lock したやつは必ず unlock
+            //this._glow.draw(this._canvas, this._glowMtx); // キラキラを描く
+            
+            // 雪を発生させますよ
+//            var n = 10;
+//            while (n--) {
+            for (var i = 0; i < 4; i++) {
+              	var hsla = 'hsla(' + (Math.random() * 20 + 180) + ', 50%, 30%, 0.3)';
+                this.emitParticle(Math.random() * w, -20, Math.random() + 0.5, hsla);
+            }
+		}
+
+		function _drawLine(x0, y0, x1, y1, color, alpha) {
+			var steep = Math.abs(y1 - y0) > Math.abs(x1 - x0);
+			var tmp;
+			if (steep) {
+				tmp = x0;
+				x0 = y0;
+				y0 = tmp;
+				tmp = x1;
+				x1 = y1;
+				y1 = tmp;
+			}
+			if (x0 > x1) {
+				tmp = x0;
+				x0 = x1;
+				x1 = tmp;
+				tmp = y0;
+				y0 = y1;
+				y1 = tmp;
+			}
+			var deltax = x1 - x0;
+			var deltay = Math.abs(y1 - y0);
+			var error = deltax / 2;
+			var ystep;
+			var y = y0;
+			if (y0 < y1) {
+				ystep = 1;
+			} else {
+				ystep = -1;
+			}
+			var c = color.split(',');
+			c.pop();
+			for (var x = x0; x <= x1; x++) {
+				if (steep) {
+					ctx.fillStyle = c.join(',')+','+alpha+')';
+					ctx.fillRect(y, x, 1,1);
+				} else {
+					ctx.fillStyle = c.join(',')+','+alpha+')';
+					ctx.fillRect(x, y, 1,1);
+				}
+				error = error - deltay;
+				if (error < 0) {
+					y = y + ystep;
+					error = error + deltax;
+				}
+			}
+		}
+		init();
+
+		function SnowParticle() {
+			this.x = 0;
+			this.y = 0;
+			this.vx = 0;
+			this.vy = 0;
+			this.s = 1;
+			this.c = 0xffffff;
+		}
+	</script>
+
+</html>

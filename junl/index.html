@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>炸飞机小样儿</title>
+		<style type="text/css">
+			body {
+				margin: 0;
+				padding: 0;
+			}
+			.box{
+				position: relative;
+			}
+			#canvas {
+				width: 100%;
+			}
+			#layer {
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				top: 0;
+				padding-top: 10%;
+				background-color: rgba(0, 0, 0, 0.5);
+				text-align: center;
+				font-size: 30px;
+				color: #ffffff;
+				visibility: hidden;
+				pointer-events: none;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="box">
+			<canvas id="canvas" width="440" height="480">
+				your browser does not support HTML5 Canvas
+			</canvas>
+			<div id="layer">
+				通过微信右上角菜单栏分享
+			</div>
+		</div>
+		
+	</body>
+	<script type="text/javascript">
+		window.addEventListener('load', eventWindowLoaded, false);
+
+		function eventWindowLoaded() {
+			canvasApp();
+		}
+
+		 //页面参数
+		function GetQueryString(name) {
+			var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+			var r = location.search.substr(1).match(reg);
+			if (r != null)
+				return (r[2]);
+			return null;
+		}
+
+		function canvasApp() {
+
+
+			var from = GetQueryString("from");
+			var isappinstalled = GetQueryString("isappinstalled");
+
+			
+
+			var theLayer = document.getElementById("layer");
+			var theCanvas = document.getElementById("canvas");
+			if (!theCanvas || !theCanvas.getContext) {
+				return;
+			}
+
+			var context = theCanvas.getContext("2d");
+
+			if (!context) {
+				return;
+			}
+
+			//game state
+			const GAME_STATE_EDIT = 1;
+			const GAME_STATE_PLAY = 2;
+			const GAME_STATE_OVER = 3;
+
+			//棋盘格标记
+			const UNIT_LABEL_NULL = 0;
+			const UNIT_LABEL_MISS = 1
+			const UNIT_LABEL_HIT = 2;
+			const UNIT_LABEL_DIE = 3;
+			//飞机格颜色样式
+			const PLANE_STYLE_HEAD = '#ff0000';
+			const PLANE_STYLE_BODY = '#ffff00';
+			const PLANE_STYLE_MOVE = '#cccccc';
+
+			var curGameState;
+			var maxPlane=0;
+			var score=0;
+			var step=0;
+
+			var planes;
+			var units;
+			
+			if (from && isappinstalled) {
+				drawLabel();
+				decodeUnits(location.hash.replace('#',''));
+				playGame();
+			}
+			else{
+				playEdit();
+			}
+			
+			function playGame(){
+				score = 0;
+				step = 0;
+				curGameState = GAME_STATE_PLAY;
+				
+				clearBottom();
+				
+				fillFinishLayer();
+				drawScreenTitle();
+				drawGrid()
+
+				drawScoreboard();
+			}
+
+			function playEdit() {
+				planes = [];
+				oldUnits = [];
+				maxPlane = 0;
+				
+				curGameState = GAME_STATE_EDIT;
+
+				resetBoard();
+
+				fillBackground();
+				drawLabel();
+				drawGrid();
+				drawButtons();
+			}
+
+			function resetBoard() {
+				units = [];
+				for (var i = 0; i < 10; i++) {
+					var cols = [];
+					for (var j = 0; j < 10; j++) {
+						var unit = {};
+						unit.isActive = false;
+						unit.isHead = false;
+						unit.label = UNIT_LABEL_NULL;
+						unit.group = -1;
+						cols.push(unit);
+					}
+					units.push(cols);
+				}
+			}
+
+			function updateBoard() {
+				resetBoard();
+				var planeNum = planes.length;
+				for (var i = 0; i < planeNum; i++) {
+					var tempPlane = planes[i];
+					for (var j = 0; j < 10; j++) {
+						var u = getPlaneU(tempPlane.body[j]);
+						var v = getPlaneV(tempPlane.body[j]);
+						if (checkBounding(u, v)) {
+							var tempUnit = units[u][v];
+							tempUnit.isActive = true;
+							tempUnit.group = i;
+							if (j == 0) {
+								tempUnit.isHead = true;
+							}
+						}
+
+					}
+				}
+			}
+
+			function drawLabel() {
+				setTextStyle();
+				for (var i = 0; i < 10; i++) {
+					context.fillText(i + 1, i * 40 + 40, 0);
+					for (var j = 0; j < 10; j++) {
+						context.fillText(String.fromCharCode(65 + j), 0, j * 40 + 40);
+					}
+				}
+			}
+
+			function drawGrid() {
+				context.strokeStyle = '#ffffff';
+				context.beginPath();
+				for (var i = 0; i < 10; i++) {
+					context.moveTo(i * 40 + 20, 0);
+					context.lineTo(i * 40 + 20, 420);
+					for (var j = 0; j < 10; j++) {
+						context.moveTo(0, j * 40 + 20);
+						context.lineTo(420, j * 40 + 20);
+					}
+				}
+				context.stroke();
+				context.closePath();
+				context.restore();
+			}
+
+			function fillBackground() {
+				//draw background and text
+				context.fillStyle = '#000000';
+				context.fillRect(20, 20, 400, 400);
+			}
+
+			function fillFinishLayer() {
+				//draw background and text
+				context.fillStyle = '#dddddd';
+				context.fillRect(20, 20, 400, 400);
+			}
+
+			function setTextStyle() {
+				context.fillStyle = '#000000';
+				context.font = '15px _sans';
+				context.textBaseline = 'top';
+			}
+
+			function createPlaneTop(n) {
+				context.fillStyle = PLANE_STYLE_HEAD;
+				context.fillRect(40 * n + 20 + 16, 440, 8, 8);
+				context.fillStyle = PLANE_STYLE_BODY;
+				context.fillRect(40 * n + 20, 440 + 8, 40, 8);
+				context.fillRect(40 * n + 20 + 16, 440 + 16, 8, 8);
+				context.fillRect(40 * n + 20 + 8, 440 + 24, 24, 8);
+			}
+
+			function createPlaneRight(n) {
+				context.fillStyle = PLANE_STYLE_HEAD;
+				context.fillRect(40 * n + 20 + 32, 440 + 16, 8, 8);
+				context.fillStyle = PLANE_STYLE_BODY;
+				context.fillRect(40 * n + 20 + 24, 440, 8, 40);
+				context.fillRect(40 * n + 20 + 16, 440 + 16, 8, 8);
+				context.fillRect(40 * n + 20 + 8, 440 + 8, 8, 24);
+			}
+
+			function createPlaneBottom(n) {
+				context.fillStyle = PLANE_STYLE_HEAD;
+				context.fillRect(40 * n + 20 + 16, 440 + 24, 8, 8);
+				context.fillStyle = PLANE_STYLE_BODY;
+				context.fillRect(40 * n + 20, 440 + 16, 40, 8);
+				context.fillRect(40 * n + 20 + 16, 440 + 8, 8, 8);
+				context.fillRect(40 * n + 20 + 8, 440, 24, 8);
+			}
+
+			function createPlaneLeft(n) {
+				context.fillStyle = PLANE_STYLE_HEAD;
+				context.fillRect(40 * n + 20 + 8, 440 + 16, 8, 8);
+				context.fillStyle = PLANE_STYLE_BODY;
+				context.fillRect(40 * n + 20 + 16, 440, 8, 40);
+				context.fillRect(40 * n + 20 + 24, 440 + 16, 8, 8);
+				context.fillRect(40 * n + 20 + 32, 440 + 8, 8, 24);
+			}
+
+			function drawFinishBtn() {
+				context.fillStyle = '#000000';
+				context.fillRect(300, 440, 80, 40);
+				context.fillStyle = '#ffffff';
+				context.font = '30px _sans';
+				context.textBaseline = 'top';
+				context.fillText('分享', 310, 440);
+			}
+
+			function clearBottom() {
+				context.fillStyle = '#ffffff';
+				context.fillRect(20, 440, 400, 40);
+			}
+
+			function drawButtons() {
+				drawBottomText('创建')
+
+				createPlaneTop(2);
+				createPlaneRight(3);
+				createPlaneBottom(4);
+				createPlaneLeft(5);
+
+				if (curGameState == GAME_STATE_EDIT) {
+					drawFinishBtn();
+				}
+			}
+
+			function createPlane(type) {
+				deleteUnfixedPlane();
+				var plane = {};
+				if (type == 1)
+					plane.body = [0x00020000, 0x00000001, 0x00010001, 0x00020001, 0x00030001, 0x00040001, 0x00020002, 0x00010003, 0x00020003, 0x00030003];
+				else if (type == 2)
+					plane.body = [0x00030002, 0x00020000, 0x00020001, 0x00020002, 0x00020003, 0x00020004, 0x00010002, 0x00000001, 0x00000002, 0x00000003];
+				else if (type == 3)
+					plane.body = [0x00020003, 0x00000002, 0x00010002, 0x00020002, 0x00030002, 0x00040002, 0x00020001, 0x00010000, 0x00020000, 0x00030000];
+				else if (type == 4)
+					plane.body = [0x00000002, 0x00010000, 0x00010001, 0x00010002, 0x00010003, 0x00010004, 0x00020002, 0x00030001, 0x00030002, 0x00030003];
+				planes.push(plane);
+				drawPlane(plane);
+
+				updateBoard();
+			}
+
+			function drawPlane(plane) {
+				for (var i = 0; i < 10; i++) {
+					var u = getPlaneU(plane.body[i]);
+					var v = getPlaneV(plane.body[i]);
+					if (checkBounding(u, v))
+						drawTile(u, v, PLANE_STYLE_MOVE);
+				}
+			}
+
+			function resetPlane(plane, du, dv) {
+
+				var tempBody = plane.body;
+				for (var i = 0; i < 10; i++) {
+					tempBody[i] = tempBody[i] + (du << 16 | dv);
+				}
+
+			}
+
+			function drawOldBoard() {
+				if (oldUnits.length == 0) return;
+				for (var i = 0; i < 10; i++) {
+					for (var j = 0; j < 10; j++) {
+						var tempUnit = oldUnits[i][j];
+						if (tempUnit.isActive) {
+							drawTile(i, j, PLANE_STYLE_BODY);
+							if (tempUnit.isHead) {
+								drawTile(i, j, PLANE_STYLE_HEAD);
+							}
+						} else {
+							drawTile(i, j, '#000000');
+						}
+					}
+				}
+			}
+
+			function drawTile(u, v, color) {
+				context.fillStyle = color;
+				context.fillRect(u * 40 + 20, v * 40 + 20, 40, 40);
+				context.strokeStyle = '#ffffff';
+				context.beginPath();
+				context.moveTo(u * 40 + 20, v * 40 + 20);
+				context.lineTo(u * 40 + 60, v * 40 + 20);
+				context.lineTo(u * 40 + 60, v * 40 + 60);
+				context.lineTo(u * 40 + 20, v * 40 + 60);
+				context.lineTo(u * 40 + 20, v * 40 + 20);
+				context.stroke();
+				context.closePath();
+			}
+
+			function drawScoreboard() {
+				for (var i = 0; i < maxPlane; i++) {
+					createPlaneTop(i)
+				}
+
+				context.fillStyle = '#000000';
+				context.font = '30px _sans';
+				context.textBaseline = 'top';
+				context.fillText('步数', 20 + 6 * 40 + 10, 440);
+			}
+
+			function updateStep() {
+				step++;
+				context.fillStyle = '#ffffff';
+				context.fillRect(20 + 8 * 40, 440, 80, 40);
+				context.fillStyle = '#000000';
+				context.font = '30px _sans';
+				context.textBaseline = 'top';
+				context.fillText(step, 20 + 8 * 40, 440);
+			}
+
+			function drawBottomText(t) {
+				clearBottom();
+
+				context.fillStyle = '#000000';
+				context.font = '30px _sans';
+				context.textBaseline = 'top';
+				context.fillText(t, 20, 440);
+			}
+
+			function drawScreenTitle() {
+				context.fillStyle = '#ffffff';
+				context.font = '400px _sans';
+				context.textBaseline = 'top';
+				context.fillText('炸', 20, 0);
+			}
+
+			function deleteUnfixedPlane() {
+				if (movePlane != null) {
+					var unfixedIndex = planes.indexOf(movePlane)
+					planes.splice(unfixedIndex, 1);
+				}
+			}
+
+			function editFinish() {
+				maxPlane = planes.length;
+
+				deleteUnfixedPlane();
+				updateBoard();
+
+				playGame();
+
+				theLayer.style.visibility = 'visible';
+				
+				window.location.hash = encodeUnits();
+			}
+
+			function checkCollide(plane) {
+				for (var i = 0; i < 10; i++) {
+					var u = getPlaneU(plane.body[i]);
+					var v = getPlaneV(plane.body[i]);
+					if (!checkBounding(u, v)) return false;
+					if (oldUnits.length > 0 && oldUnits[u][v].isActive && planes.indexOf(plane) != oldUnits[u][v].group) return false;
+				}
+				return true;
+			}
+
+			function checkBounding(u, v) {
+				if (u >= 0 && v >= 0 && u < 10 && v < 10) return true;
+				return false;
+			}
+
+			function explodePlane() {
+				context.strokeStyle = '#FF0000';
+				context.beginPath();
+				context.moveTo(20 + (score - 1) * 40, 440);
+				context.lineTo(60 + (score - 1) * 40, 480);
+				context.moveTo(60 + (score - 1) * 40, 440);
+				context.lineTo(20 + (score - 1) * 40, 480);
+				context.stroke();
+				context.closePath();
+			}
+
+			function gameOver() {
+				curGameState = GAME_STATE_OVER;
+				for (var i = 0; i < 10; i++) {
+					for (var j = 0; j < 10; j++) {
+						var tempUnit = units[i][j];
+						if (tempUnit.isActive) {
+							drawTile(i, j, PLANE_STYLE_BODY);
+							if (tempUnit.isHead)
+								drawTile(i, j, PLANE_STYLE_HEAD);
+						} else {
+							drawTile(i, j, '#000000');
+						}
+					}
+				}
+
+				drawBottomText('恭喜你用了' + step + '步炸掉了' + maxPlane + '架飞机');
+			}
+
+			function getPlaneU(uint) {
+				return uint >> 16;
+			}
+
+			function getPlaneV(uint) {
+				return uint & 0xffff;
+			}
+
+			function posToUV(x, y) {
+				return [Math.floor((x - 20) / 40), Math.floor((y - 20) / 40)];
+			}
+
+			function copyUnits() {
+				oldUnits = [];
+				for (var i = 0; i < 10; i++) {
+					var cols = [];
+					for (var j = 0; j < 10; j++) {
+						var newUnit = clone(units[i][j]);
+						cols.push(newUnit);
+					}
+					oldUnits.push(cols);
+				}
+			}
+			
+			function encodeUnits(){
+				var str='';
+				for (var i = 0; i < 10; i++) {
+					for (var j = 0; j < 10; j++) {
+						var tag;
+						var tempUnit = units[i][j];
+						if (tempUnit.isActive) {
+							tag = '1';
+							if (tempUnit.isHead)
+								tag = '2';
+						} else {
+							tag = '0';
+						}
+						str+=tag;
+					}
+				}
+				return str;
+			}
+			
+			function decodeUnits(str){
+				units = [];
+				for (var i = 0; i < 10; i++) {
+					var cols = [];
+					for (var j = 0; j < 10; j++) {
+						var unit = {};
+						unit.isActive = false;
+						unit.isHead = false;
+						unit.label = UNIT_LABEL_NULL;
+						unit.group = -1;
+						if (str.charAt(i*10+j)=='1'){
+							unit.isActive = true;
+						}else if (str.charAt(i*10+j)=='2'){
+							unit.isActive = true;
+							unit.isHead = true;
+							maxPlane++;
+						}
+						cols.push(unit);
+					}
+					units.push(cols);
+				}
+			}
+
+			function clone(myObj) {
+				if (typeof(myObj) != 'object') return myObj;
+				if (myObj == null) return myObj;
+
+				var myNewObj = new Object();
+
+				for (var i in myObj)
+					myNewObj[i] = clone(myObj[i]);
+
+				return myNewObj;
+			}
+
+
+			var istouch = ('createTouch' in document); //判定是否为手持设备 
+
+			var StartEvent = istouch ? 'touchstart' : 'mousedown'; //支持触摸式使用相应的事件替代 
+			var MoveEvent = istouch ? 'touchmove' : 'mousemove';
+			var EndEvent = istouch ? 'touchend' : 'mouseup';
+
+			var startUV = [];
+			var movePlane;
+			var oldUnits = [];
+			var scale = 440/window.innerWidth;
+
+			function touchStart(e) {
+				e.preventDefault();
+				
+				var eTouch = istouch ? e.touches[0]:e;
+				var x = scale * eTouch.pageX;
+				var y = scale * eTouch.pageY;
+
+				if (x >= 20 && x <= 420 && y > 20 && y < 420) {
+					var uv = posToUV(x, y);
+					var tempUnit = units[uv[0]][uv[1]];
+					if (curGameState == GAME_STATE_EDIT) {
+
+						if (tempUnit.isActive) {
+							startUV = uv;
+							var curGroup = tempUnit.group;
+							movePlane = planes[curGroup];
+							fillBackground();
+							drawGrid();
+							drawOldBoard();
+							drawPlane(movePlane);
+							updateBoard();
+							document.addEventListener(MoveEvent, touchMove)
+						};
+
+
+
+					} else if (curGameState == GAME_STATE_PLAY) {
+						updateStep();
+						if (tempUnit.isActive) {
+							drawTile(uv[0], uv[1], PLANE_STYLE_BODY);
+							if (tempUnit.isHead) {
+								drawTile(uv[0], uv[1], PLANE_STYLE_HEAD);
+								score++;
+								explodePlane();
+								if (score == maxPlane)
+									gameOver()
+							}
+						} else {
+							drawTile(uv[0], uv[1], '#000000');
+						}
+
+					} else if (curGameState == GAME_STATE_OVER) {
+						playEdit();
+					}
+				}
+				if (curGameState == GAME_STATE_EDIT) {
+
+					if (x >= 100 && x <= 140 && y > 440 && y < 480) {
+						createPlane(1);
+
+					}
+					if (x >= 140 && x <= 180 && y > 440 && y < 480) {
+						createPlane(2);
+					}
+					if (x >= 180 && x <= 220 && y > 440 && y < 480) {
+						createPlane(3);
+					}
+					if (x >= 220 && x <= 280 && y > 440 && y < 480) {
+						createPlane(4);
+					}
+					if (x >= 300 && x <= 380 && y > 440 && y < 480) {
+						editFinish();
+					}
+				}
+			}
+
+			function touchMove(e) {
+				var eTouch = istouch ? e.touches[0]:e;
+				var x = scale * eTouch.pageX;
+				var y = scale * eTouch.pageY;
+				if (x >= 20 && x <= 420 && y > 20 && y < 420) {
+					var uv = posToUV(x, y);
+					if (startUV.length > 0) {
+						var diffU = uv[0] - startUV[0];
+						var diffV = uv[1] - startUV[1];
+						if (!(diffU == 0 && diffV == 0)) {
+
+							resetPlane(movePlane, diffU, diffV);
+							startUV = [uv[0], uv[1]];
+
+							fillBackground();
+							drawGrid();
+							drawOldBoard();
+							drawPlane(movePlane);
+
+							updateBoard();
+						}
+
+					}
+				}
+			}
+
+			function touchEnd(e) {
+//				e.preventDefault();
+//				alert(e.changedTouches[0])
+				var eTouch = istouch ? e.changedTouches[0]:e;
+				var x = scale * eTouch.pageX;
+				var y = scale * eTouch.pageY;
+				
+				if (x >= 20 && x <= 420 && y > 20 && y < 420) {
+					if (curGameState == GAME_STATE_EDIT) {
+						if (movePlane && checkCollide(movePlane)) {
+							copyUnits();
+							drawOldBoard();
+							movePlane = null;
+
+						}
+					}
+				}
+				startUV = [];
+				document.removeEventListener(MoveEvent, touchMove)
+			}
+
+			document.addEventListener(StartEvent, touchStart);
+
+			document.addEventListener(EndEvent, touchEnd);
+
+			function debugShow() {
+				for (var i = 0; i < 10; i++) {
+					for (var j = 0; j < 10; j++) {
+						context.fillStyle = '#FF0000';
+						context.font = '10px _sans';
+						context.fillText("a:" + units[i][j].isActive, i * 40 + 20, j * 40 + 20);
+						context.fillText("g:" + units[i][j].group, i * 40 + 20, j * 40 + 30);
+						if (oldUnits.length > 0) {
+							context.fillStyle = '#0000ff';
+							context.font = '10px _sans';
+							context.fillText("a:" + oldUnits[i][j].isActive, i * 40 + 20, j * 40 + 40);
+							context.fillText("g:" + oldUnits[i][j].group, i * 40 + 20, j * 40 + 50);
+						}
+
+					}
+				}
+			}
+		}
+	</script>
+
+
+</html>

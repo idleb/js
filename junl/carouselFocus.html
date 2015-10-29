@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<link rel="stylesheet" type="text/css" href="css/owl.carousel.css"/>
+		<link rel="stylesheet" type="text/css" href="css/owl.theme.css"/>
+		<link rel="stylesheet" type="text/css" href="css/jq.carousel.focus.css" />
+		<link rel="stylesheet" type="text/css" href="css/jq.carousel.banner.css"/>
+		<style type="text/css">
+			li{
+				list-style: none;
+			}
+		</style>
+	</head>
+
+	<body>
+	
+			<ul class="owl">
+				<li>
+					<img src="img/home_pic_01.jpg" />
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_02.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_03.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_04.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_05.jpg" />
+					</a>
+				</li>
+			</ul>
+		
+		<div class="poster">
+			<div class="nav nav_prev">
+			</div>
+			<ul>
+				<li>
+					<img src="img/home_pic_01.jpg" />
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_02.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_03.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_04.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_05.jpg" />
+					</a>
+				</li>
+			</ul>
+			<div class="nav nav_next">
+			</div>
+		</div>
+		<div id="bar">
+			<input type="text" name="" id="pattern" value="y年m月d日h时i分s秒" />
+			<input type="submit" name="" id="format" value="格式化" />
+			<input type="text" name="" id="newtime" value="" />
+		</div>
+		<div class="banner">
+			<div class="nav nav_prev">
+			</div>
+			<ul>
+				<li>
+					<img src="img/home_pic_01.jpg" />
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_02.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_03.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_04.jpg" />
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<img src="img/home_pic_05.jpg" />
+					</a>
+				</li>
+			</ul>
+			<div class="nav nav_next">
+			</div>
+		</div>
+<div id="xhrDiv"></div>
+	</body>
+	<script src="js/jquery-2.1.1.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/owl.carousel.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/jq.carousel.focus.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/jq.carousel.banner.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		window.onload = function() {
+			$(".owl").owlCarousel({
+				items:1,
+				loop : true,
+		margin : 0,
+		nav : true,
+		dots : false,
+		autoplay : true,
+		autoplayTimeout : 5000,
+		merge : true
+			});
+			$(".poster").fCarousel();
+			$(".banner").sCarousel({width:100});
+
+			function formatDate(formatStr, fdate) {
+				var fTime, fStr = 'ymdhis';
+				if (!formatStr)
+					formatStr = "y-m-d h:i:s";
+				if (fdate)
+					fTime = new Date(fdate);
+				else
+					fTime = new Date();
+				var formatArr = [
+					fTime.getFullYear().toString(), (fTime.getMonth() + 1).toString(),
+					fTime.getDate().toString(),
+					fTime.getHours() < 10 ? '0' + fTime.getHours().toString() : fTime.getHours().toString(),
+					fTime.getMinutes() < 10 ? '0' + fTime.getMinutes().toString() : fTime.getMinutes().toString(),
+					fTime.getSeconds() < 10 ? '0' + fTime.getSeconds().toString() : fTime.getSeconds().toString()
+				]
+				for (var i = 0; i < formatArr.length; i++) {
+					formatStr = formatStr.replace(fStr.charAt(i), formatArr[i]);
+				}
+				return formatStr;
+			}
+			document.getElementById('format').onclick = function() {
+				document.getElementById('newtime').value = formatDate(document.getElementById('pattern').value || "y年m月d日h时i分s秒", new Date().getTime())
+			}
+			
+			function xingqi(c,y,m,d){
+				return Math.floor(y+(y/4)+(c/4)-2*c+(26*(m+1)/10)+d-1)%7;
+			}
+		}
+	</script>
+
+</html>

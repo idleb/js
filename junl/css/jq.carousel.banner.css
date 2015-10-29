@@ -1,0 +1,11 @@
+.banner{
+	position: relative;
+	width: 100%;
+}
+.banner ul,.banner li{
+	position: absolute;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	width: 100%;
+}
