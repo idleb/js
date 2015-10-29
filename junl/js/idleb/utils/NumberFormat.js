@@ -4,7 +4,7 @@
 	/**
 	 * 数字转欧美计数格式 (10,000,000)
 	 * 
-	 * @param {Object} count
+	 * @param {Object} count 数字
 	 */
 	NumberFormat.US = function(count) {
 		var value = "";
@@ -26,7 +26,7 @@
 	/**
 	 * 数字省略加中文单位 (10亿,1000万)
 	 * 
-	 * @param {Object} count	数字
+	 * @param {Object} count 数字
 	 */
 	NumberFormat.CN = function(count) {
 		var value = "";
@@ -44,8 +44,8 @@
 	/**
 	 * 数字转字符串并向前补0
 	 * 
-	 * @param {Number} n	数字
-	 * @param {Number} l	字符串长度
+	 * @param {Number} n 数字
+	 * @param {Number} l 字符串长度
 	 */
 	NumberFormat.Zero = function(n, l) {
 		var s, r;
@@ -59,9 +59,9 @@
 	/**
 	 * 时间戳格式化
 	 *
-	 * @param	{Number}	fdate		时间戳 
-	 * @params	{String}	formatStr	格式化样式 (y-m-d h:i:s)
-	 * @param	{Boolean}	hasTimezone	减去时差
+	 * @param  {Number}  fdate       时间戳 
+	 * @params {String}  formatStr   格式化样式 (y-m-d h:i:s)
+	 * @param  {Boolean} hasTimezone 减去时差
 	 */
 	NumberFormat.Date = function(fdate, formatStr, hasTimezone) {
 		var fTime, fStr = 'ymdhis';
